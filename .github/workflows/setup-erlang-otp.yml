@@ -220,7 +220,7 @@ jobs:
         erlang-version: 27
     # Check if the installed version of Erlang is correct.
     - run: |
-        if [ "${{ steps.setup-erlang.outputs.erlang-version }}" != "27.3.4" ]; then
+        if [ "${{ steps.setup-erlang.outputs.erlang-version }}" != "27.3.4.17" ]; then
           echo "Unexpected Erlang/OTP version: ${{ steps.setup-erlang.outputs.erlang-version }}"
           exit 1
         fi
