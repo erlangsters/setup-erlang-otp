@@ -20,7 +20,7 @@ const exec = require('@actions/exec');
 // XXX: Detection of libc must be reworked to be more robust.
 
 // By default, this is where we download the pre-built Erlang binaries.
-const S3_ENDPOINT_URL = 'https://hel1.your-objectstorage.com';
+const S3_ENDPOINT_URL = 'https://storage.erlangsters.org';
 const S3_BUCKET_NAME = 'erlangsters';
 const S3_PATH_PREFIX = 'erlang-otp';
 
