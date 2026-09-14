@@ -174,20 +174,20 @@ function muslTreeUnsupportedReason(otpVersion, muslVersion) {
   if (!muslVersion) {
     return (
       'This runner uses musl, but the musl version could not be determined. ' +
-      'Pre-built musl trees are for musl 1.2.5 (Alpine 3.21–3.23). ' +
+      'Pre-built musl trees are for musl 1.2.5 (Alpine 3.23). ' +
       `OTP ${major} is not installed on an unknown musl version. ` +
       'Pin this job to alpine:3.23.'
     );
   }
   if (versionAtLeast(muslVersion, MUSL_UNSUPPORTED_FROM)) {
     return (
-      'Pre-built musl Erlang/OTP trees are for musl 1.2.5 (Alpine 3.21–3.23). ' +
+      'Pre-built musl Erlang/OTP trees are for musl 1.2.5 (Alpine 3.23). ' +
       `This runner has musl ${muslVersion}. ` +
       'OTP 26 and later abort on musl 1.2.6 with: ' +
       'sys_sigaltstack(): Failed to set alternate signal stack. ' +
       'Official OTP still uses a compile-time SIGSTKSZ (~8KiB). ' +
       'These trees are dynamically linked, so a 3.23 build is not safe here. ' +
-      'Pin this job to alpine:3.23 (or 3.21/3.22). ' +
+      'Pin this job to alpine:3.23. ' +
       'Alpine 3.24 and alpine:3 are unsupported until an official OTP release ' +
       'sizes the alternate signal stack at runtime.'
     );
