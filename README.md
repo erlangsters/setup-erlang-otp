@@ -66,20 +66,36 @@ Like stated, it does not build Erlang/OTP and instead use pre-built binaries
 that are provided by the Erlangsters community. That implies that the supported
 platforms derived from their policy.
 
-Erlang/OTP versions are available starting from version 25.x and are built for
-the following combination of OSes and architectures.
+The catalog is the latest patch of each remaining major:
 
-- Linux (amd64|arm64, glibc|musl)
-- macOS (arm64)
-- Windows (amd64)
+- Erlang/OTP 29.0.6
+- Erlang/OTP 28.5.0.6
+- Erlang/OTP 27.3.4.17
+
+`erlang-version: 27` installs 27.3.4.17. OTP 25 and 26 are not shipped.
+
+| Artifact | Built on | libc | Run on | Do not run on |
+|---|---|---|---|---|
+| `debian-amd64`, `debian-arm64` | `debian:12` | glibc 2.36 | Debian 12+, Ubuntu 24.04+, Debian 13 | Ubuntu 22.04 (glibc 2.35), Debian 11 |
+| `alpine-amd64` | `alpine:3.23` | musl 1.2.5 | Alpine 3.23 | Alpine 3.24, `alpine:3`, musl 1.2.6 |
+| `macos-arm64` | `macos-26` | — | current macOS arm64 runners | Intel Mac |
+| `windows-amd64` | `windows-2022` | — | that runner | — |
 
 If you're confused about what "glibc" and "musl" are, they are the C libraries
 used system-wide. Most Linux distros use the "GNU C Library"; however, distros
 like Alpine use musl, which has a smaller footprint.
 
+Musl trees are Alpine 3.23 only. OTP 26 and later abort on musl 1.2.6 with
+`sys_sigaltstack(): Failed to set alternate signal stack`, because official OTP
+still uses a compile-time `SIGSTKSZ`. The trees are dynamically linked, so a
+3.23 build is not safe on 3.24. On musl 1.2.6 this action refuses to install
+rather than hand you a beam that SIGABRTs. Pin the job container to
+`alpine:3.23`.
+
 > **Note:** There is currently a limitation with GitHub Actions where Alpine ARM64
 > runners do not support JavaScript actions. Until GitHub adds this support,
 > this action cannot be used on Linux arm64/musl (Alpine) systems.
+
 ## Dummy applications
 
 What's with the `dummy-release/` and `dummy-escript/` folders in this
