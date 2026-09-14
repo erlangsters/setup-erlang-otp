@@ -153,29 +153,133 @@ function getRunnerArchitecture() {
     throw new Error(`Unsupported architecture: ${arch}`);
   }
 }
-function getRunnerLibC() {
+
+// OTP 26 and later call sigaltstack with compile-time SIGSTKSZ (~8KiB). musl
+// 1.2.6 rejects that when the runtime MINSIGSTKSZ is larger (AMX/AVX-512
+// hosts). Trees are dynamically linked, so a 3.23 build is not safe on 1.2.6.
+const MUSL_UNSUPPORTED_FROM = '1.2.6';
+const OTP_SIGALTSTACK_MAJOR = 26;
+
+function parseDottedVersion(version) {
+  return version.split('.').map((part) => parseInt(part, 10) || 0);
+}
+
+function versionAtLeast(version, minimum) {
+  const left = parseDottedVersion(version);
+  const right = parseDottedVersion(minimum);
+  const n = Math.max(left.length, right.length);
+  for (let i = 0; i < n; i++) {
+    const a = left[i] || 0;
+    const b = right[i] || 0;
+    if (a > b) {
+      return true;
+    }
+    if (a < b) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function otpMajorVersion(version) {
+  return parseInt(version.split('.')[0], 10);
+}
+
+function parseMuslVersion(text) {
+  if (!text) {
+    return null;
+  }
+  const match = text.match(/Version\s+(\d+\.\d+(?:\.\d+)?)/i);
+  return match ? match[1] : null;
+}
+
+function probeMuslVersion(lddOutput) {
+  const fromLdd = parseMuslVersion(lddOutput);
+  if (fromLdd) {
+    return fromLdd;
+  }
+
+  const loaders = [
+    '/lib/ld-musl-x86_64.so.1',
+    '/lib/ld-musl-aarch64.so.1'
+  ];
+  for (const loader of loaders) {
+    if (!fs.existsSync(loader)) {
+      continue;
+    }
+    try {
+      const out = execSync(`"${loader}" 2>&1 || true`).toString();
+      const version = parseMuslVersion(out);
+      if (version) {
+        return version;
+      }
+    } catch (error) {
+      const version = parseMuslVersion(`${error.stdout || ''}${error.stderr || ''}`);
+      if (version) {
+        return version;
+      }
+    }
+  }
+  return null;
+}
+
+function detectLinuxLibc() {
   // Only relevant on Linux. Note that the implementation is rather fragile
   // (the 'ldd' command is not consistent across all Linux distributions).
   if (os.platform() !== 'linux') {
-    return null;
+    return { libc: null, muslVersion: null };
   }
 
+  let lddOutput;
   try {
-    const lddOutput = execSync('ldd --version || true').toString();
-    if (lddOutput.includes('glibc') || lddOutput.includes('GLIBC')) {
-      return 'glibc';
-    } else {
-      return 'musl';
-    }
+    lddOutput = execSync('ldd --version 2>&1 || true').toString();
   } catch (error) {
     throw new Error('Failed to determine the standard C library (glibc or musl)');
   }
+
+  if (lddOutput.includes('glibc') || lddOutput.includes('GLIBC')) {
+    return { libc: 'glibc', muslVersion: null };
+  }
+
+  return { libc: 'musl', muslVersion: probeMuslVersion(lddOutput) };
 }
+
+function muslTreeUnsupportedReason(otpVersion, muslVersion) {
+  const major = otpMajorVersion(otpVersion);
+  if (!(major >= OTP_SIGALTSTACK_MAJOR)) {
+    return null;
+  }
+  if (!muslVersion) {
+    return (
+      'This runner uses musl, but the musl version could not be determined. ' +
+      'Pre-built musl trees are for musl 1.2.5 (Alpine 3.21–3.23). ' +
+      `OTP ${major} is not installed on an unknown musl version. ` +
+      'Pin this job to alpine:3.23.'
+    );
+  }
+  if (versionAtLeast(muslVersion, MUSL_UNSUPPORTED_FROM)) {
+    return (
+      'Pre-built musl Erlang/OTP trees are for musl 1.2.5 (Alpine 3.21–3.23). ' +
+      `This runner has musl ${muslVersion}. ` +
+      'OTP 26 and later abort on musl 1.2.6 with: ' +
+      'sys_sigaltstack(): Failed to set alternate signal stack. ' +
+      'Official OTP still uses a compile-time SIGSTKSZ (~8KiB). ' +
+      'These trees are dynamically linked, so a 3.23 build is not safe here. ' +
+      'Pin this job to alpine:3.23 (or 3.21/3.22). ' +
+      'Alpine 3.24 and alpine:3 are unsupported until an official OTP release ' +
+      'sizes the alternate signal stack at runtime.'
+    );
+  }
+  return null;
+}
+
 function detectPlatform() {
+  const linuxLibc = detectLinuxLibc();
   const platform = {
     os: getRunnerOS(),
     arch: getRunnerArchitecture(),
-    libc: getRunnerLibC()
+    libc: linuxLibc.libc,
+    muslVersion: linuxLibc.muslVersion
   };
   return platform;
 }
@@ -231,6 +335,14 @@ async function run() {
     // pre-built binaries to install).
     const platform = detectPlatform();
     console.log(`Detected platform is ${JSON.stringify(platform)}.`);
+
+    if (platform.libc === 'musl') {
+      const muslReason = muslTreeUnsupportedReason(erlangVersion, platform.muslVersion);
+      if (muslReason) {
+        core.setOutput('unsupported-musl', 'true');
+        throw new Error(muslReason);
+      }
+    }
 
     // Based on the platform, compute the location of the tarball to download
     // from the S3 bucket.

@@ -18,6 +18,8 @@ outputs:
     description: Erlang/OTP version that was installed.
   erlang-location:
     description: The absolute path of the Erlang/OTP installation location.
+  unsupported-musl:
+    description: Set to true when install is refused because of musl 1.2.6.
 runs:
   using: node20
   main: setup-erlang.js
