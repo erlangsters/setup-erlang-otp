@@ -1,5 +1,5 @@
 ---
-name: setup-erlang
+name: setup-erlang-otp
 description: |
   Set up a specific version of Erlang in your Github Actions workflow
   (optionally with rebar3).

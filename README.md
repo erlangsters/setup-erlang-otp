@@ -5,7 +5,7 @@ Actions workflows. It detects the platform of your runners and install a
 pre-built version of Erlang/OTP accordingly.
 
 ```yaml
-- uses: erlangsters/setup-erlang@v1
+- uses: erlangsters/setup-erlang-otp@v1
   with:
     erlang-version: 27
     install-rebar3: true
@@ -21,7 +21,7 @@ released under the MIT [license](/https://opensource.org/license/mit).
 
 The pre-built binaries used by this action are the ones maintained by the
 Erlangsters community and therefore it supports Linux, macOS and Windows. See
-the [Erlang/OTP builder](https://github.com/erlangsters/build-erlang) for more
+the [Erlang/OTP builder](https://github.com/erlangsters/build-erlang-otp) for more
 information.
 
 ## Basic usage
@@ -30,7 +30,7 @@ No input is required to use this action and therefore the most basic usage is
 the following.
 
 ```yaml
-- uses: erlangsters/setup-erlang@v1
+- uses: erlangsters/setup-erlang-otp@v1
 ```
 
 It will simply use the latest version of Erlang/OTP and install just that.
@@ -39,7 +39,7 @@ Of course, you may specify an Erlang version with the `erlang-version` input
 field.
 
 ```yaml
-- uses: erlangsters/setup-erlang@v1
+- uses: erlangsters/setup-erlang-otp@v1
   with:
     erlang-version: 27
 ```
@@ -53,7 +53,7 @@ There really is nothing more to this action other than the possibility to
 install the `rebar3` script.
 
 ```yaml
-- uses: erlangsters/setup-erlang@v1
+- uses: erlangsters/setup-erlang-otp@v1
   with:
     install-rebar3: true
 ```
@@ -84,8 +84,8 @@ like Alpine use musl, which has a smaller footprint.
 
 What's with the `dummy-release/` and `dummy-escript/` folders in this
 repository? Well, they're real-life Erlang applications that are used by the
-Github Actions [workflow](.github/workflows/setup-erlang.yml) to test the
-`setup-erlang` action against them.
+Github Actions [workflow](.github/workflows/setup-erlang-otp.yml) to test the
+`setup-erlang-otp` action against them.
 
 The `dummy-release/` folder contains an OTP release which uses the popular
 [cowboy](https://ninenines.eu/docs/en/cowboy/2.12/guide/) framework to

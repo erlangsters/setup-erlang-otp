@@ -1,5 +1,5 @@
 {
-    "name": "setup-erlang",
+    "name": "setup-erlang-otp",
     "license": "MIT",
     "private": true,
     "dependencies": {
