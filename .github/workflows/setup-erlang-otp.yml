@@ -15,7 +15,7 @@ jobs:
         exclude:
           - arch: arm64
             libc: musl
-    container: ${{ matrix.libc == 'musl' && 'alpine:3' || 'debian:12' }}
+    container: ${{ matrix.libc == 'musl' && 'alpine:3.23' || 'debian:12' }}
     steps:
     - uses: actions/checkout@v4
     - uses: ./
@@ -34,6 +34,29 @@ jobs:
       if: matrix.libc == 'musl'
     - run: cd dummy-release && rebar3 as prod release
     - run: cd dummy-escript && rebar3 escriptize
+
+  # Musl trees are Alpine 3.23 / musl 1.2.5. alpine:3.24 (musl 1.2.6) must
+  # refuse OTP 26+ rather than install a beam that SIGABRTs.
+  refuse-musl-1-2-6:
+    runs-on: ubuntu-latest
+    container: alpine:3.24
+    steps:
+    - uses: actions/checkout@v4
+    - uses: ./
+      id: setup
+      continue-on-error: true
+      with:
+        erlang-version: 29
+    - name: Expect musl 1.2.6 refusal
+      run: |
+        if [ "${{ steps.setup.outcome }}" != "failure" ]; then
+          echo "expected setup-erlang-otp to fail on alpine:3.24 / musl 1.2.6"
+          exit 1
+        fi
+        if [ "${{ steps.setup.outputs.unsupported-musl }}" != "true" ]; then
+          echo "expected unsupported-musl=true, got '${{ steps.setup.outputs.unsupported-musl }}'"
+          exit 1
+        fi
 
   build-ubuntu:
     runs-on: ubuntu-latest
